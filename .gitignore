@@ -14,4 +14,7 @@ build/
 
 # Fichiers système
 .DS_Store
-Thumbs.db 
+Thumbs.db
+
+# Dossier de données
+data/

@@ -2,60 +2,91 @@ package service;
 
 import model.Book;
 import model.Member;
-import utils.Constants;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.logging.*;
+import java.util.*;
 
 public class LibraryService implements ILibraryService {
-    private static final Logger logger = Logger.getLogger(LibraryService.class.getName());
     private List<Book> livres;
     private List<Member> membres;
+    private final DataPersistenceService persistenceService;
 
     public LibraryService() {
-        // Configuration du logger pour un affichage plus simple
-        configureLogger();
+        this.persistenceService = new DataPersistenceService();
+        this.livres = persistenceService.loadBooks();
+        this.membres = persistenceService.loadMembers(this.livres);
         
-        this.livres = new ArrayList<>();
-        this.membres = new ArrayList<>();
+        // Charger les données initiales seulement si aucune donnée n'existe
+        if (livres.isEmpty() && membres.isEmpty()) {
+            chargerDonneesInitiales();
+        }
     }
 
-    private void configureLogger() {
-        // Supprime tous les handlers existants
-        Logger rootLogger = Logger.getLogger("");
-        Handler[] handlers = rootLogger.getHandlers();
-        for (Handler handler : handlers) {
-            rootLogger.removeHandler(handler);
-        }
+    private void chargerDonneesInitiales() {
+        // Ajout des livres de test
+        ajouterLivre(new Book("123", "Le Petit Prince", "Antoine de Saint-Exupéry"));
+        ajouterLivre(new Book("456", "1984", "George Orwell"));
+        ajouterLivre(new Book("789", "Harry Potter", "J.K. Rowling"));
         
-        // Configure notre logger
-        logger.setLevel(Level.ALL);
-        ConsoleHandler handler = new ConsoleHandler();
-        handler.setFormatter(new Formatter() {
-            @Override
-            public String format(LogRecord record) {
-                // Retourne uniquement le message sans décoration
-                return record.getMessage() + System.lineSeparator();
-            }
-        });
-        
-        // Désactive la propagation au parent
-        logger.setUseParentHandlers(false);
-        logger.addHandler(handler);
+        // Ajout des membres de test
+        ajouterMembre(new Member(1, "Jean Dupont", "jean@email.com"));
+        ajouterMembre(new Member(2, "Marie Martin", "marie@email.com"));
     }
 
     @Override
     public void ajouterLivre(Book livre) {
-        livres.add(livre);
-        System.out.println(Constants.MSG_LIVRE_AJOUTE + livre.getTitre());  // Utilisation de println au lieu de logger
+        if (!livreExiste(livre.getIsbn())) {
+            livres.add(livre);
+            persistenceService.saveBooks(livres);
+            System.out.println("Livre ajouté : " + livre.getTitre());
+        }
+    }
+
+    @Override
+    public void supprimerLivre(Book livre) {
+        if (!livre.estEmprunte()) {
+            livres.remove(livre);
+            persistenceService.saveBooks(livres);
+            System.out.println("Livre supprimé : " + livre.getTitre());
+        }
+    }
+
+    @Override
+    public void modifierLivre(Book livre) {
+        Book existingBook = trouverLivre(livre.getIsbn()).orElse(null);
+        if (existingBook != null) {
+            existingBook.setTitre(livre.getTitre());
+            existingBook.setAuteur(livre.getAuteur());
+            persistenceService.saveBooks(livres);
+            System.out.println("Livre modifié : " + livre.getTitre());
+        }
     }
 
     @Override
     public void ajouterMembre(Member membre) {
-        membres.add(membre);
-        System.out.println(Constants.MSG_MEMBRE_AJOUTE + membre.getNom());  // Utilisation de println au lieu de logger
+        if (!membreExiste(membre.getId())) {
+            membres.add(membre);
+            persistenceService.saveMembers(membres);
+            System.out.println("Membre ajouté : " + membre.getNom());
+        }
+    }
+
+    @Override
+    public void supprimerMembre(Member membre) {
+        if (membre.getLivresEmpruntes().isEmpty()) {
+            membres.remove(membre);
+            persistenceService.saveMembers(membres);
+            System.out.println("Membre supprimé : " + membre.getNom());
+        }
+    }
+
+    @Override
+    public void modifierMembre(Member membre) {
+        Member existingMember = trouverMembre(membre.getId()).orElse(null);
+        if (existingMember != null) {
+            existingMember.setNom(membre.getNom());
+            existingMember.setEmail(membre.getEmail());
+            persistenceService.saveMembers(membres);
+            System.out.println("Membre modifié : " + membre.getNom());
+        }
     }
 
     @Override
@@ -70,6 +101,8 @@ public class LibraryService implements ILibraryService {
             if (!l.estEmprunte()) {
                 l.setEstEmprunte(true);
                 m.emprunterLivre(l);
+                persistenceService.saveBooks(livres);
+                persistenceService.saveMembers(membres);
                 System.out.println("Livre emprunté avec succès");
             } else {
                 System.out.println("Le livre n'est pas disponible");
@@ -90,6 +123,8 @@ public class LibraryService implements ILibraryService {
 
             l.setEstEmprunte(false);
             m.rendreLivre(l);
+            persistenceService.saveBooks(livres);
+            persistenceService.saveMembers(membres);
             System.out.println("Livre rendu avec succès");
         } else {
             System.out.println("Livre ou membre non trouvé");
@@ -108,13 +143,21 @@ public class LibraryService implements ILibraryService {
                 .findFirst();
     }
 
+    private boolean livreExiste(String isbn) {
+        return livres.stream().anyMatch(l -> l.getIsbn().equals(isbn));
+    }
+
+    private boolean membreExiste(int id) {
+        return membres.stream().anyMatch(m -> m.getId() == id);
+    }
+
     @Override
     public List<Book> getLivres() {
-        return livres;
+        return new ArrayList<>(livres);
     }
 
     @Override
     public List<Member> getMembres() {
-        return membres;
+        return new ArrayList<>(membres);
     }
 } 

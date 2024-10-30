@@ -1,25 +1,18 @@
 package model;
 
-/**
- * Classe représentant un livre dans la bibliothèque
- * Cette classe contient toutes les informations relatives à un livre
- */
 public class Book {
-    // Les attributs privés pour respecter l'encapsulation
     private String isbn;
     private String titre;
     private String auteur;
     private boolean estEmprunte;
 
-    // Constructeur
     public Book(String isbn, String titre, String auteur) {
         this.isbn = isbn;
         this.titre = titre;
         this.auteur = auteur;
-        this.estEmprunte = false; // Par défaut, un nouveau livre n'est pas emprunté
+        this.estEmprunte = false;
     }
 
-    // Getters et Setters
     public String getIsbn() {
         return isbn;
     }
@@ -40,7 +33,14 @@ public class Book {
         this.estEmprunte = estEmprunte;
     }
 
-    // Méthode toString pour afficher les informations du livre
+    public void setTitre(String titre) {
+        this.titre = titre;
+    }
+
+    public void setAuteur(String auteur) {
+        this.auteur = auteur;
+    }
+
     @Override
     public String toString() {
         return "Livre{" +
