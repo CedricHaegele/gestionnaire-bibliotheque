@@ -80,13 +80,10 @@ Les données sont sauvegardées automatiquement dans le dossier `data/` :
   ![image](https://github.com/user-attachments/assets/d07094bc-8a43-46b2-9ddd-0f0fc30651fb)
 
 
-
-
 ## 👤 Auteur
 
 Cédric HAEGELE
 
-## 📝 Licence
 
 
    
